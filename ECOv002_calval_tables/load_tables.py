@@ -69,6 +69,8 @@ def load_calval_table() -> gpd.GeoDataFrame:
     merged_df["insitu_Rn_Wm2"] = np.array(merged_df.NETRAD_filt)
     merged_df["insitu_G_Wm2"] = np.array(merged_df.G_filt)
     merged_df["insitu_SWin_Wm2"] = np.array(merged_df.SW_IN)   
+    merged_df["insitu_Ta_C"] = np.array(merged_df.AirTempC)
+    merged_df["insitu_RH"] = np.array(merged_df.RH_percentage)
 
     # Convert merged DataFrame to GeoDataFrame
     gdf = gpd.GeoDataFrame(merged_df, geometry=merged_df["geometry"], crs="EPSG:4326")
