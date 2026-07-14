@@ -36,6 +36,9 @@ def load_metadata_ebc_filt() -> gpd.GeoDataFrame:
 
     return gdf
 
+def load_scene_table() -> pd.DataFrame:
+    return pd.read_csv(os.path.join(os.path.dirname(__file__), "orbit_scene_tile.csv"))
+
 def load_calval_table() -> gpd.GeoDataFrame:
     """
     Load the combined ECOSTRESS Collection 2 validation table, which includes both the filtered eddy covariance flux data
@@ -46,6 +49,7 @@ def load_calval_table() -> gpd.GeoDataFrame:
     """
     tower_locations_gdf = load_metadata_ebc_filt()
     tower_data_df = load_combined_eco_flux_ec_filtered()
+    scene_df = load_scene_table()
 
     # Merge all columns from both tables, matching tower_data_df.ID to tower_locations_gdf["Site ID"]
     merged_df = pd.merge(
@@ -56,13 +60,15 @@ def load_calval_table() -> gpd.GeoDataFrame:
         how="left",
         suffixes=("", "_meta")
     )
-
+    
     merged_df["time_UTC"] = merged_df["eco_time_utc"]
     merged_df["ST_K"] = np.array(merged_df.LST)
     merged_df["ST_C"] = np.array(merged_df.ST_K - 273.15)
     merged_df["Ta_C"] = np.array(merged_df.Ta)
     merged_df["SWin_Wm2"] = np.array(merged_df.Rg)
     merged_df["emissivity"] = np.array(merged_df.EmisWB)
+
+    merged_df = pd.merge(merged_df, scene_df, on=["ID", "time_UTC"], how="left")
 
     merged_df["insitu_LE_Wm2"] = np.array(merged_df.LEcorr50)
     merged_df["insitu_H_Wm2"] = np.array(merged_df.Hcorr50)
@@ -74,7 +80,6 @@ def load_calval_table() -> gpd.GeoDataFrame:
 
     # Convert merged DataFrame to GeoDataFrame
     gdf = gpd.GeoDataFrame(merged_df, geometry=merged_df["geometry"], crs="EPSG:4326")
-    
     gdf = upscale_to_daylight(gdf)
 
     return gdf
